@@ -86,8 +86,8 @@ public class MainActivity extends Activity implements SEService.CallBack,
 	public final static int ACTIVITYRESULT_INSTALL_PARAM_SET = 104;
 	public final static int ACTIVITYRESULT_GET_DATA = 105;
 	public final static int ACTIVITYRESULT_APPLET_INSTALL_TEST = 106;
-    private static final int REQUEST_CODE = 1234;
-    private TextView mLog;
+	private static final int REQUEST_CODE = 1234;
+	private TextView mLog;
 
 	// UI Elements
 	private Spinner mReaderSpinner = null;
@@ -100,6 +100,11 @@ public class MainActivity extends Activity implements SEService.CallBack,
 	private Button mButtonRemoveChannelset = null;
 	private Button mButtonGetData = null;
 	private Button mButtonTestMifare = null;
+	private Button mButtonActivateCard = null;
+	private android.widget.EditText mEditLicense = null;
+	private android.widget.CheckBox mCheckNumeric = null;
+	private Button mButtonCopyLog = null;
+	private Button mButtonClearLog = null;
 
 	private static LogMe MAIN_Log;
 
@@ -112,7 +117,8 @@ public class MainActivity extends Activity implements SEService.CallBack,
 	private ArrayAdapter<String> mChannelSetAdapter;
 
 	public enum APDU_COMMAND {
-		APDU_INSTALL, APDU_DELETE_SENT_APPLET, APDU_DISPLAYAPPLETS_ONCARD, APDU_SELECT, APDU_SEND, APDU_GET_DATA, APDU_DELETE_SELECTED_APPLET, APDU_CMD_OPEN
+		APDU_INSTALL, APDU_DELETE_SENT_APPLET, APDU_DISPLAYAPPLETS_ONCARD, APDU_SELECT, APDU_SEND, APDU_GET_DATA,
+		APDU_DELETE_SELECTED_APPLET, APDU_CMD_OPEN
 	}
 
 	private String mAppletUrl = null;
@@ -193,8 +199,8 @@ public class MainActivity extends Activity implements SEService.CallBack,
 		mButtonRemoveKeyset.setOnClickListener(new View.OnClickListener() {
 
 			@Override
-        public void onClick(View v) {
-                GPKeyset keyset = mKeysetMap.get(mKeysetSpinner.getSelectedItem());
+			public void onClick(View v) {
+				GPKeyset keyset = mKeysetMap.get(mKeysetSpinner.getSelectedItem());
 				if (keyset != null) {
 					KeysetDataSource keysetSource = new KeysetDataSource(
 							MainActivity.this);
@@ -226,94 +232,101 @@ public class MainActivity extends Activity implements SEService.CallBack,
 			}
 		});
 
-        ensureDefaultKeysExist();
+		ensureDefaultKeysExist();
 
 		loadPreferences();
 
 		mLog = (TextView) findViewById(R.id.log);
-		//mLog.setMovementMethod(new ScrollingMovementMethod());
+		// mLog.setMovementMethod(new ScrollingMovementMethod());
 
 		MAIN_Log.d(LOG_TAG, "Start GPJ Shell");
 		// GlobalPlatformService.usage();
 
 	}
 
-    private void ensureDefaultKeysExist() {
-        KeysetDataSource source = new KeysetDataSource(this);
-        source.open();
+	private void ensureDefaultKeysExist() {
+		KeysetDataSource source = new KeysetDataSource(this);
+		source.open();
 
-        // Check if "NXP-J3R452" is already in the DB for the NFC Interface
-        Map<String, GPKeyset> existingKeys = source.getKeysets("NFC Interface");
+		// Check and seed "NXP-J3R452"
+		seedDefaultKeyset(source, "NFC Interface", "NXP-J3R452",
+				"926cd4d4030b9bd778fd4e888bebcc19", // MAC
+				"92373832e706a169d7e4225ce865280c", // DEK (ENC)
+				"4c19fa846b9180b0736c3172e00426cf" // KEK
+		);
 
-        boolean needsSeed = true;
-        if (existingKeys != null) {
-            for (GPKeyset k : existingKeys.values()) {
-                if (k.getName().equals("NXP-J3R452")) {
-                    if (k.getID() != 0) {
-                        source.remove(k.getUniqueID());
-                    } else {
-                        needsSeed = false;
-                    }
-                }
-            }
-        }
+		// Check and seed "NXP-J3R200"
+		seedDefaultKeyset(source, "NFC Interface", "NXP-J3R200",
+				"9bef06c71b136ce96297f433efc0e07a", // MAC
+				"0fc1253f5faa2f51c7a434c86c7c5945", // DEK (ENC)
+				"edcfaaa595acb3eb514fa00703da2a63" // KEK
+		);
 
-        if (needsSeed) {
+		source.close();
+	}
 
-            // Create the keyset using the 8-parameter constructor:
-            // GPKeyset(int uniqueID, String name, int ID, int version, String MAC, String DEK, String KEK, String readerName)
-            GPKeyset defaultKeys = new GPKeyset(
-                    (int) (System.currentTimeMillis() / 1000), // 1. uniqueID (must be an int)
-                    "NXP-J3R452",                              // 2. name
-                    0,                                         // 3. ID (Internal index)
-                    0,                                         // 4. version (KVN)
-                    "926cd4d4030b9bd778fd4e888bebcc19",        // 5. MAC
-                    "92373832e706a169d7e4225ce865280c",        // 6. DEK (goes to this.ENC)
-                    "4c19fa846b9180b0736c3172e00426cf",        // 7. KEK
-                    "NFC Interface"                            // 8. readerName
-            );
+	private void seedDefaultKeyset(KeysetDataSource source, String reader, String name, String mac, String enc,
+			String dek) {
+		Map<String, GPKeyset> existingKeys = source.getKeysets(reader);
+		boolean needsSeed = true;
+		if (existingKeys != null) {
+			for (GPKeyset k : existingKeys.values()) {
+				if (k.getName().equals(name)) {
+					if (k.getID() != 0) {
+						source.remove(k.getUniqueID());
+					} else {
+						needsSeed = false;
+					}
+				}
+			}
+		}
 
-            source.insertKeyset(defaultKeys);
-            Log.d("GPDroid", "Default NXP AES Keyset Seeded.");
-        }
-        source.close();
-    }
+		if (needsSeed) {
+			GPKeyset defaultKeys = new GPKeyset(
+					(int) (System.currentTimeMillis() / 1000) + name.hashCode(), // uniqueID
+					name, 0, 0, mac, enc, dek, reader);
+			source.insertKeyset(defaultKeys);
+			Log.d("GPDroid", "Default " + name + " Keyset Seeded.");
+		}
+	}
 
-    protected Dialog onCreateDialog(int id, Bundle args) {
+	protected Dialog onCreateDialog(int id, Bundle args) {
 		switch (id) {
-		case DIALOG_MF_WAIT_FOR_TAG:
-			return new AlertDialog.Builder(this)
-					.setTitle("Mifare Test")
-					.setMessage("Touch Mifare tag to start test")
-					.setCancelable(true)
-					.setOnCancelListener(
-							new DialogInterface.OnCancelListener() {
+			case DIALOG_MF_WAIT_FOR_TAG:
+				return new AlertDialog.Builder(this)
+						.setTitle("Mifare Test")
+						.setMessage("Touch Mifare tag to start test")
+						.setCancelable(true)
+						.setOnCancelListener(
+								new DialogInterface.OnCancelListener() {
 
-								@Override
-								public void onCancel(DialogInterface dialog) {
-									mWaitingForMfTest = false;
-
-								}
-							}).create();
-
-		case DIALOG_MF_WAIT_FOR_FINISH:
-			return new AlertDialog.Builder(this)
-					.setTitle("Mifare Test")
-					.setMessage("Test running, please wait...")
-					.setCancelable(true)
-					.setOnCancelListener(
-							new DialogInterface.OnCancelListener() {
-
-								@Override
-								public void onCancel(DialogInterface dialog) {
-									MAIN_Log.d(LOG_TAG, "cancelled");
-									if (mMifareTest != null
-											&& mMifareTest.isRunning()) {
-										mMifareTest.cancel(true);
+									@Override
+									public void onCancel(DialogInterface dialog) {
+										mWaitingForMfTest = false;
 
 									}
-								}
-							}).create();
+								})
+						.create();
+
+			case DIALOG_MF_WAIT_FOR_FINISH:
+				return new AlertDialog.Builder(this)
+						.setTitle("Mifare Test")
+						.setMessage("Test running, please wait...")
+						.setCancelable(true)
+						.setOnCancelListener(
+								new DialogInterface.OnCancelListener() {
+
+									@Override
+									public void onCancel(DialogInterface dialog) {
+										MAIN_Log.d(LOG_TAG, "cancelled");
+										if (mMifareTest != null
+												&& mMifareTest.isRunning()) {
+											mMifareTest.cancel(true);
+
+										}
+									}
+								})
+						.create();
 
 		}
 		return null;
@@ -351,7 +364,7 @@ public class MainActivity extends Activity implements SEService.CallBack,
 
 		if (mTerminal == null) {
 			mTerminal = // new OpenMobileAPITerminal(this, this);
-			NfcTerminal.getInstance(this);
+					NfcTerminal.getInstance(this);
 		}
 		mTCPConnection = new TCPConnection(this, this);
 		Thread td = new Thread(mTCPConnection);
@@ -394,112 +407,109 @@ public class MainActivity extends Activity implements SEService.CallBack,
 		if (_resultCode == Activity.RESULT_OK) {
 
 			switch (_requestCode) {
-                case ACTIVITYRESULT_FILESELECTED:
-                    Uri uri = _data.getData();
-                    mAppletUrl = uri.toString();
-                    MAIN_Log.d(LOG_TAG, "Selected URI: " + mAppletUrl);
-                    mFileNameView.setText(uri.getLastPathSegment());
-                    break;
+				case ACTIVITYRESULT_FILESELECTED:
+					Uri uri = _data.getData();
+					mAppletUrl = uri.toString();
+					MAIN_Log.d(LOG_TAG, "Selected URI: " + mAppletUrl);
+					mFileNameView.setText(uri.getLastPathSegment());
+					break;
 
+				case ACTIVITYRESULT_KEYSET_SET:
+					GPKeyset keyset = (GPKeyset) _data.getExtras().get(
+							GPKeyset.KEYSET);
+					// set actual reader to keyset - each keyset is bound to a
+					// reader
+					keyset.setReaderName((String) mReaderSpinner.getSelectedItem());
 
+					KeysetDataSource keySource = new KeysetDataSource(this);
 
-			case ACTIVITYRESULT_KEYSET_SET:
-				GPKeyset keyset = (GPKeyset) _data.getExtras().get(
-						GPKeyset.KEYSET);
-				// set actual reader to keyset - each keyset is bound to a
-				// reader
-				keyset.setReaderName((String) mReaderSpinner.getSelectedItem());
+					keySource.open();
+					keySource.insertKeyset(keyset);
+					mKeysetMap = keySource.getKeysets((String) mReaderSpinner
+							.getSelectedItem());
+					keySource.close();
 
-				KeysetDataSource keySource = new KeysetDataSource(this);
+					addKeysetItemsOnSpinner(Arrays.asList(mKeysetMap.keySet()
+							.toArray(new String[0])));
 
-				keySource.open();
-				keySource.insertKeyset(keyset);
-				mKeysetMap = keySource.getKeysets((String) mReaderSpinner
-						.getSelectedItem());
-				keySource.close();
+					break;
 
-				addKeysetItemsOnSpinner(Arrays.asList(mKeysetMap.keySet()
-						.toArray(new String[0])));
+				case ACTIVITYRESULT_CHANNEL_SET:
+					GPChannelSet channel = (GPChannelSet) _data.getExtras().get(
+							GPChannelSet.CHANNEL_SET);
 
-				break;
+					ChannelSetDataSource channelSource = new ChannelSetDataSource(
+							this);
 
-			case ACTIVITYRESULT_CHANNEL_SET:
-				GPChannelSet channel = (GPChannelSet) _data.getExtras().get(
-						GPChannelSet.CHANNEL_SET);
+					channelSource.open();
+					channelSource.insertChannelSet(channel);
+					mChannelSetMap = channelSource.getChannelSets();
+					channelSource.close();
 
-				ChannelSetDataSource channelSource = new ChannelSetDataSource(
-						this);
+					addChannelSetItemsOnSpinner(Arrays.asList(mChannelSetMap
+							.keySet().toArray(new String[0])));
 
-				channelSource.open();
-				channelSource.insertChannelSet(channel);
-				mChannelSetMap = channelSource.getChannelSets();
-				channelSource.close();
+					break;
 
-				addChannelSetItemsOnSpinner(Arrays.asList(mChannelSetMap
-						.keySet().toArray(new String[0])));
-
-				break;
-
-            case ACTIVITYRESULT_INSTALL_PARAM_SET:
-                byte[] params = null;
-                byte privileges = 0;
-                if (_data != null && _data.getExtras() != null) {
-                    // ASSIGN the values to the variables
-                    params = _data.getExtras().getByteArray("params");
-                    privileges = _data.getExtras().getByte("privileges");
-                }
-
-                try {
-                    performCommand(APDU_COMMAND.APDU_INSTALL,
-                            mReaderSpinner.getSelectedItemPosition(), params,
-                            privileges, mAppletUrl);
-                } catch (Exception e) {
-                    MAIN_Log.e(LOG_TAG, "Error while installing: ", e);
-                }
-                break;
-
-
-			case ACTIVITYRESULT_GET_DATA:
-				mP1 = _data.getExtras().getInt("p1");
-				mP2 = _data.getExtras().getInt("p2");
-				MAIN_Log.d("Parameters: ", "P1=" + mP1 + ", P2=" + mP2);
-				Handler handler = new Handler();
-				handler.postDelayed(new Runnable() {
-
-					@Override
-					public void run() {
-						Integer params[] = { mP1, mP2 };
-						performCommand(APDU_COMMAND.APDU_GET_DATA,
-								mReaderSpinner.getSelectedItemPosition(), null,
-								(byte) 0, params);
+				case ACTIVITYRESULT_INSTALL_PARAM_SET:
+					byte[] params = null;
+					byte privileges = 0;
+					if (_data != null && _data.getExtras() != null) {
+						// ASSIGN the values to the variables
+						params = _data.getExtras().getByteArray("params");
+						privileges = _data.getExtras().getByte("privileges");
 					}
-				}, 000);
-				break;
 
-			case PENDING_INTENT_TECH_DISCOVERED:
-				MAIN_Log.d(LOG_TAG, "card discovered");
-				if (NfcAdapter.ACTION_TECH_DISCOVERED.equals(_data.getAction())) {
-					Tag tag = _data.getParcelableExtra(NfcAdapter.EXTRA_TAG);
-					if (mWaitingForMfTest) {
-						mWaitingForMfTest = false;
+					try {
+						performCommand(APDU_COMMAND.APDU_INSTALL,
+								mReaderSpinner.getSelectedItemPosition(), params,
+								privileges, mAppletUrl);
+					} catch (Exception e) {
+						MAIN_Log.e(LOG_TAG, "Error while installing: ", e);
+					}
+					break;
 
-						runMifareTest(tag);
-					} else {
-						if (mTerminal != null) {
-							((NfcTerminal) mTerminal).passTag(tag);
-							if (mTerminal.isConnected()) {
-								serviceConnected(null);
-								Log.d(LOG_TAG, "Card detected");
+				case ACTIVITYRESULT_GET_DATA:
+					mP1 = _data.getExtras().getInt("p1");
+					mP2 = _data.getExtras().getInt("p2");
+					MAIN_Log.d("Parameters: ", "P1=" + mP1 + ", P2=" + mP2);
+					Handler handler = new Handler();
+					handler.postDelayed(new Runnable() {
+
+						@Override
+						public void run() {
+							Integer params[] = { mP1, mP2 };
+							performCommand(APDU_COMMAND.APDU_GET_DATA,
+									mReaderSpinner.getSelectedItemPosition(), null,
+									(byte) 0, params);
+						}
+					}, 000);
+					break;
+
+				case PENDING_INTENT_TECH_DISCOVERED:
+					MAIN_Log.d(LOG_TAG, "card discovered");
+					if (NfcAdapter.ACTION_TECH_DISCOVERED.equals(_data.getAction())) {
+						Tag tag = _data.getParcelableExtra(NfcAdapter.EXTRA_TAG);
+						if (mWaitingForMfTest) {
+							mWaitingForMfTest = false;
+
+							runMifareTest(tag);
+						} else {
+							if (mTerminal != null) {
+								((NfcTerminal) mTerminal).passTag(tag);
+								if (mTerminal.isConnected()) {
+									serviceConnected(null);
+									Log.d(LOG_TAG, "Card detected");
+								}
 							}
 						}
 					}
-				}
-				break;
+					break;
 
-			case ACTIVITYRESULT_APPLET_INSTALL_TEST:
+				case ACTIVITYRESULT_APPLET_INSTALL_TEST:
 
-			default:
-				break;
+				default:
+					break;
 			}
 
 		} else if (_resultCode == Activity.RESULT_CANCELED) {
@@ -523,7 +533,7 @@ public class MainActivity extends Activity implements SEService.CallBack,
 	 * sets items to the spinner of keysets
 	 * 
 	 * @param keysets
-	 *            keysets from DB according to the set smartcard
+	 *                keysets from DB according to the set smartcard
 	 */
 	public void addKeysetItemsOnSpinner(List<String> keysets) {
 		mKeysetSpinner = (Spinner) findViewById(R.id.keyset_spinner);
@@ -547,7 +557,7 @@ public class MainActivity extends Activity implements SEService.CallBack,
 	 * sets the channelsettings to the channelspinner
 	 * 
 	 * @param channelSets
-	 *            all available channelsets from DB
+	 *                    all available channelsets from DB
 	 */
 	public void addChannelSetItemsOnSpinner(List<String> channelSets) {
 		mChannelSpinner = (Spinner) findViewById(R.id.channel_spinner);
@@ -566,142 +576,174 @@ public class MainActivity extends Activity implements SEService.CallBack,
 	}
 
 	// add items into spinner dynamically
-    public void addReaderItemsOnSpinner(Reader[] _readers) {
+	public void addReaderItemsOnSpinner(Reader[] _readers) {
 
-        mReaderSpinner = (Spinner) findViewById(R.id.reader_spinner);
-        buttonConnect = (Button) findViewById(R.id.btn_install_applet);
-        buttonListApplet = (Button) findViewById(R.id.btn_list_applets);
-        buttonSelectApplet = (Button) findViewById(R.id.button3);
-        mButtonAppletInstallTest = (Button) findViewById(R.id.btn_applet_test);
-        mButtonEchoTest = (Button) findViewById(R.id.btn_echo_test);
+		mReaderSpinner = (Spinner) findViewById(R.id.reader_spinner);
+		buttonConnect = (Button) findViewById(R.id.btn_install_applet);
+		buttonListApplet = (Button) findViewById(R.id.btn_list_applets);
+		buttonSelectApplet = (Button) findViewById(R.id.button3);
+		mButtonAppletInstallTest = (Button) findViewById(R.id.btn_applet_test);
+		mButtonEchoTest = (Button) findViewById(R.id.btn_echo_test);
+		mButtonActivateCard = (Button) findViewById(R.id.btn_activate_card);
+		mEditLicense = (android.widget.EditText) findViewById(R.id.edit_license);
+		mCheckNumeric = (android.widget.CheckBox) findViewById(R.id.check_numeric);
+		mButtonCopyLog = (Button) findViewById(R.id.btn_copy_log);
+		mButtonClearLog = (Button) findViewById(R.id.btn_clear_log);
 
-        if (mReaderSpinner != null) {
-            List<String> list = new ArrayList<String>();
-            for (int i = 0; i < _readers.length; i++) {
-                Reader reader = _readers[i];
-                list.add(reader.getName());
-            }
-            if (_readers.length == 0) {
-                list.add("NFC Interface");
-            }
+		if (mReaderSpinner != null) {
+			List<String> list = new ArrayList<String>();
+			for (int i = 0; i < _readers.length; i++) {
+				Reader reader = _readers[i];
+				list.add(reader.getName());
+			}
+			if (_readers.length == 0) {
+				list.add("NFC Interface");
+			}
 
-            ArrayAdapter<String> dataAdapter = new ArrayAdapter<String>(this,
-                    android.R.layout.simple_spinner_item, list);
-            dataAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-            mReaderSpinner.setAdapter(dataAdapter);
+			ArrayAdapter<String> dataAdapter = new ArrayAdapter<String>(this,
+					android.R.layout.simple_spinner_item, list);
+			dataAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+			mReaderSpinner.setAdapter(dataAdapter);
 
-            // refresh keyset spinner when new reader is selected
-            mReaderSpinner.setOnItemSelectedListener(new OnItemSelectedListener() {
+			// refresh keyset spinner when new reader is selected
+			mReaderSpinner.setOnItemSelectedListener(new OnItemSelectedListener() {
 
-                @Override
-                public void onItemSelected(AdapterView<?> arg0, View arg1, int arg2, long arg3) {
-                    String selectedReader = (String) mReaderSpinner.getSelectedItem();
+				@Override
+				public void onItemSelected(AdapterView<?> arg0, View arg1, int arg2, long arg3) {
+					String selectedReader = (String) mReaderSpinner.getSelectedItem();
 
-                    KeysetDataSource source = new KeysetDataSource(MainActivity.this);
-                    source.open();                    // --- SEEDING LOGIC START ---
-                    mKeysetMap = source.getKeysets(selectedReader);
-                    boolean needsSeed = true;
-                    if (mKeysetMap != null) {
-                        for (GPKeyset k : mKeysetMap.values()) {
-                            if (k.getName().equals("NXP-J3R452")) {
-                                if (k.getID() != 0) {
-                                    source.remove(k.getUniqueID());
-                                } else {
-                                    needsSeed = false;
-                                }
-                            }
-                        }
-                    }
+					KeysetDataSource source = new KeysetDataSource(MainActivity.this);
+					source.open(); // --- SEEDING LOGIC START ---
+					// Check and seed "NXP-J3R452"
+					seedDefaultKeyset(source, selectedReader, "NXP-J3R452",
+							"926cd4d4030b9bd778fd4e888bebcc19", // MAC
+							"92373832e706a169d7e4225ce865280c", // DEK (ENC)
+							"4c19fa846b9180b0736c3172e00426cf" // KEK
+					);
 
-                    if (needsSeed) {
+					// Check and seed "NXP-J3R200"
+					seedDefaultKeyset(source, selectedReader, "NXP-J3R200",
+							"9bef06c71b136ce96297f433efc0e07a", // MAC
+							"0fc1253f5faa2f51c7a434c86c7c5945", // DEK (ENC)
+							"edcfaaa595acb3eb514fa00703da2a63" // KEK
+					);
 
-                        // Create the object using the constructor from your GPKeyset.java
-                        GPKeyset nxpKeys = new GPKeyset(
-                                (int) (System.currentTimeMillis() / 1000),    // 1. uniqueID (Using timestamp to ensure uniqueness)
-                                "NXP-J3R452",                        // 2. name
-                                0,                                   // 3. ID (Internal index)
-                                0,                                   // 4. version (KVN)
-                                "926cd4d4030b9bd778fd4e888bebcc19",  // 5. MAC
-                                "92373832e706a169d7e4225ce865280c",  // 6. DEK (Maps to this.ENC in your class)
-                                "4c19fa846b9180b0736c3172e00426cf",  // 7. KEK (Maps to this.KEK in your class)
-                                selectedReader                       // 8. readerName
-                        );
+					mKeysetMap = source.getKeysets(selectedReader);
+					source.close();
+					// --- SEEDING LOGIC END ---
 
-                        source.insertKeyset(nxpKeys);
-                        // Refresh the map so the UI shows the new entry immediately
-                        mKeysetMap = source.getKeysets(selectedReader);
-                    }
-                    source.close();
-                    // --- SEEDING LOGIC END ---
+					List<String> keysetNames = Arrays.asList(mKeysetMap.keySet().toArray(new String[0]));
+					addKeysetItemsOnSpinner(keysetNames);
 
+					// Auto-select the NXP-J3R452 keyset in the UI
+					for (int i = 0; i < keysetNames.size(); i++) {
+						if (keysetNames.get(i).startsWith("NXP-J3R452")) {
+							mKeysetSpinner.setSelection(i);
+							break;
+						}
+					}
 
-                    List<String> keysetNames = Arrays.asList(mKeysetMap.keySet().toArray(new String[0]));
-                    addKeysetItemsOnSpinner(keysetNames);
+					ChannelSetDataSource channelSource = new ChannelSetDataSource(MainActivity.this);
+					channelSource.open();
+					mChannelSetMap = channelSource.getChannelSets();
+					channelSource.close();
+					addChannelSetItemsOnSpinner(Arrays.asList(mChannelSetMap.keySet().toArray(new String[0])));
+				}
 
-                    // Auto-select the NXP-J3R452 keyset in the UI
-                    for (int i = 0; i < keysetNames.size(); i++) {
-                        if (keysetNames.get(i).startsWith("NXP-J3R452")) {
-                            mKeysetSpinner.setSelection(i);
-                            break;
-                        }
-                    }
+				@Override
+				public void onNothingSelected(AdapterView<?> arg0) {
+				}
+			});
 
-                    ChannelSetDataSource channelSource = new ChannelSetDataSource(MainActivity.this);
-                    channelSource.open();
-                    mChannelSetMap = channelSource.getChannelSets();
-                    channelSource.close();
-                    addChannelSetItemsOnSpinner(Arrays.asList(mChannelSetMap.keySet().toArray(new String[0])));
-                }
+			buttonConnect.setOnClickListener(new OnClickListener() {
+				@Override
+				public void onClick(View v) {
+					try {
+						performCommand(APDU_COMMAND.APDU_INSTALL,
+								mReaderSpinner.getSelectedItemPosition(), null,
+								(byte) 0, mAppletUrl);
+					} catch (Exception e) {
+						MAIN_Log.e(LOG_TAG, "Error while installing: ", e);
+					}
+				}
+			});
 
-                @Override
-                public void onNothingSelected(AdapterView<?> arg0) {}
-            });
+			buttonSelectApplet.setOnClickListener(new OnClickListener() {
+				@Override
+				public void onClick(View v) {
+					Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+					intent.setType("*/*");
+					intent.addCategory(Intent.CATEGORY_OPENABLE);
+					startActivityForResult(Intent.createChooser(intent, "Select CAP file"),
+							ACTIVITYRESULT_FILESELECTED);
+				}
+			});
 
-            buttonConnect.setOnClickListener(new OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    try {
-                        performCommand(APDU_COMMAND.APDU_INSTALL,
-                                mReaderSpinner.getSelectedItemPosition(), null,
-                                (byte) 0, mAppletUrl);
-                    } catch (Exception e) {
-                        MAIN_Log.e(LOG_TAG, "Error while installing: ", e);
-                    }
-                }
-            });
+			mButtonAppletInstallTest.setOnClickListener(new OnClickListener() {
+				@Override
+				public void onClick(View v) {
+					if (mTerminal.isConnected()) {
+						MAIN_Log.d(LOG_TAG, "starting applet install test");
+						Intent intent = new Intent(MainActivity.this, AppletInstallTest.class);
+						performCommand(APDU_COMMAND.APDU_CMD_OPEN, 0, null, (byte) 0, null);
+						intent.putExtra(AppletInstallTest.EXTRA_RUNS, 5);
+						intent.putExtra(AppletInstallTest.EXTRA_APPLET_URI, mAppletUrl);
 
-            buttonSelectApplet.setOnClickListener(new OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-                    intent.setType("*/*");
-                    intent.addCategory(Intent.CATEGORY_OPENABLE);
-                    startActivityForResult(Intent.createChooser(intent, "Select CAP file"), ACTIVITYRESULT_FILESELECTED);
-                }
-            });
+						GPKeyset keyset = mKeysetMap.get((String) mKeysetSpinner.getSelectedItem());
+						GPChannelSet channelSet = mChannelSetMap.get((String) mChannelSpinner.getSelectedItem());
+						intent.putExtra(AppletInstallTest.EXTRA_CHANNELSET, channelSet);
+						intent.putExtra(AppletInstallTest.EXTRA_KEYSET, keyset);
+						startActivity(intent);
+					} else {
+						MAIN_Log.d(LOG_TAG, "No card available for test");
+					}
+				}
+			});
 
-            mButtonAppletInstallTest.setOnClickListener(new OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    if (mTerminal.isConnected()) {
-                        MAIN_Log.d(LOG_TAG, "starting applet install test");
-                        Intent intent = new Intent(MainActivity.this, AppletInstallTest.class);
-                        performCommand(APDU_COMMAND.APDU_CMD_OPEN, 0, null, (byte) 0, null);
-                        intent.putExtra(AppletInstallTest.EXTRA_RUNS, 5);
-                        intent.putExtra(AppletInstallTest.EXTRA_APPLET_URI, mAppletUrl);
+			mButtonEchoTest.setOnClickListener(new OnClickListener() {
+				@Override
+				public void onClick(View v) {
+					if (mTerminal == null || !mTerminal.isConnected()) {
+						MAIN_Log.d(LOG_TAG, "Tap card first!");
+						return;
+					}
 
-                        GPKeyset keyset = mKeysetMap.get((String) mKeysetSpinner.getSelectedItem());
-                        GPChannelSet channelSet = mChannelSetMap.get((String) mChannelSpinner.getSelectedItem());
-                        intent.putExtra(AppletInstallTest.EXTRA_CHANNELSET, channelSet);
-                        intent.putExtra(AppletInstallTest.EXTRA_KEYSET, keyset);
-                        startActivity(intent);
-                    } else {
-                        MAIN_Log.d(LOG_TAG, "No card available for test");
-                    }
-                }
-            });
+					try {
+						// ColdWallet AID: 808680880103
+						byte[] selectApplet = new byte[] {
+								(byte) 0x00, (byte) 0xA4, (byte) 0x04, (byte) 0x00, (byte) 0x06,
+								(byte) 0x80, (byte) 0x86, (byte) 0x80, (byte) 0x88, (byte) 0x01, (byte) 0x03
+						};
 
-            mButtonEchoTest.setOnClickListener(new OnClickListener() {
+						// Connect to card via the terminal's inherited CardTerminal methods
+						javax.smartcardio.Card card = mTerminal.connect("*");
+						javax.smartcardio.CardChannel channel = card.getBasicChannel();
+
+						// Create and transmit the command
+						javax.smartcardio.CommandAPDU command = new javax.smartcardio.CommandAPDU(selectApplet);
+						javax.smartcardio.ResponseAPDU response = channel.transmit(command);
+
+						// FIX: Use the method name from YOUR GPUtils.java
+						String respHex = GPUtils.byteArrayToString(response.getBytes());
+
+						MAIN_Log.d(LOG_TAG, "Response: " + respHex);
+
+						if (respHex.endsWith("9000")) {
+							MAIN_Log.d(LOG_TAG, "SUCCESS: Applet Selected!");
+						} else {
+							MAIN_Log.d(LOG_TAG, "Failed: Applet not found or SW error.");
+						}
+
+						card.disconnect(false);
+
+					} catch (Exception e) {
+						MAIN_Log.e(LOG_TAG, "Error: " + e.getMessage());
+						e.printStackTrace();
+					}
+				}
+			});
+
+            mButtonActivateCard.setOnClickListener(new OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     if (mTerminal == null || !mTerminal.isConnected()) {
@@ -709,63 +751,97 @@ public class MainActivity extends Activity implements SEService.CallBack,
                         return;
                     }
 
+                    String licenseStr = mEditLicense.getText().toString().trim();
+                    if (licenseStr.isEmpty()) {
+                        MAIN_Log.d(LOG_TAG, "Please enter a license!");
+                        return;
+                    }
+
                     try {
-                        // ColdWallet AID: 808680880103
+                        byte[] licenseData;
+                        if (mCheckNumeric.isChecked()) {
+                            // Numeric Mode: "452941" -> 04 05 02 09 04 01
+                            licenseData = new byte[licenseStr.length()];
+                            for (int i = 0; i < licenseStr.length(); i++) {
+                                licenseData[i] = (byte) Character.getNumericValue(licenseStr.charAt(i));
+                            }
+                        } else {
+                            // Default to Hex/BCD
+                            try {
+                                licenseData = GPUtils.convertHexStringToByteArray(licenseStr);
+                            } catch (Exception e) {
+                                MAIN_Log.d(LOG_TAG, "Invalid Hex! Using ASCII.");
+                                licenseData = licenseStr.getBytes();
+                            }
+                        }
+
+                        javax.smartcardio.Card card = mTerminal.connect("*");
+                        javax.smartcardio.CardChannel channel = card.getBasicChannel();
+
+                        // 1. Send SELECT Command
                         byte[] selectApplet = new byte[] {
                                 (byte)0x00, (byte)0xA4, (byte)0x04, (byte)0x00, (byte)0x06,
                                 (byte)0x80, (byte)0x86, (byte)0x80, (byte)0x88, (byte)0x01, (byte)0x03
                         };
+                        MAIN_Log.d(LOG_TAG, "1. Selecting Applet...");
+                        javax.smartcardio.ResponseAPDU selectResp = channel.transmit(new javax.smartcardio.CommandAPDU(selectApplet));
+                        MAIN_Log.d(LOG_TAG, "Select Resp: " + GPUtils.byteArrayToString(selectResp.getBytes()));
 
-                        // Connect to card via the terminal's inherited CardTerminal methods
-                        javax.smartcardio.Card card = mTerminal.connect("*");
-                        javax.smartcardio.CardChannel channel = card.getBasicChannel();
+                        if (!GPUtils.byteArrayToString(selectResp.getBytes()).endsWith("9000")) {
+                            MAIN_Log.d(LOG_TAG, "Select failed. Aborting activation.");
+                            card.disconnect(false);
+                            return;
+                        }
 
-                        // Create and transmit the command
-                        javax.smartcardio.CommandAPDU command = new javax.smartcardio.CommandAPDU(selectApplet);
-                        javax.smartcardio.ResponseAPDU response = channel.transmit(command);
+                        // 2. Send ACTIVATE Command
+                        byte[] activateCmd = new byte[5 + licenseData.length];
+                        activateCmd[0] = (byte) 0x80;
+                        activateCmd[1] = (byte) 0x22;
+                        activateCmd[2] = (byte) 0x00;
+                        activateCmd[3] = (byte) 0x00;
+                        activateCmd[4] = (byte) (licenseData.length & 0xFF);
+                        System.arraycopy(licenseData, 0, activateCmd, 5, licenseData.length);
 
-                        // FIX: Use the method name from YOUR GPUtils.java
-                        String respHex = GPUtils.byteArrayToString(response.getBytes());
+                        MAIN_Log.d(LOG_TAG, "2. Activating Card (Mode: " + (mCheckNumeric.isChecked() ? "Numeric" : "Hex") + ")...");
+                        MAIN_Log.d(LOG_TAG, "Command: " + GPUtils.byteArrayToString(activateCmd));
 
+                        javax.smartcardio.ResponseAPDU activateResp = channel.transmit(new javax.smartcardio.CommandAPDU(activateCmd));
+                        String respHex = GPUtils.byteArrayToString(activateResp.getBytes());
                         MAIN_Log.d(LOG_TAG, "Response: " + respHex);
 
                         if (respHex.endsWith("9000")) {
-                            MAIN_Log.d(LOG_TAG, "SUCCESS: Applet Selected!");
+                            MAIN_Log.d(LOG_TAG, "SUCCESS: Card Activated!");
                         } else {
-                            MAIN_Log.d(LOG_TAG, "Failed: Applet not found or SW error.");
+                            MAIN_Log.d(LOG_TAG, "Failed: Activation error " + respHex);
                         }
 
                         card.disconnect(false);
-
                     } catch (Exception e) {
-                        MAIN_Log.e(LOG_TAG, "Error: " + e.getMessage());
+                        MAIN_Log.e(LOG_TAG, "Error during activation: " + e.getMessage());
                         e.printStackTrace();
                     }
                 }
             });
 
+			buttonListApplet.setOnClickListener(new OnClickListener() {
+				@Override
+				public void onClick(View v) {
+					performCommand(APDU_COMMAND.APDU_DISPLAYAPPLETS_ONCARD,
+							mReaderSpinner.getSelectedItemPosition(), null, (byte) 0, null);
+				}
+			});
 
+			mButtonGetData.setOnClickListener(new OnClickListener() {
+				@Override
+				public void onClick(View v) {
+					Intent intent = new Intent(MainActivity.this, GetDataActivity.class);
+					startActivityForResult(intent, ACTIVITYRESULT_GET_DATA);
+				}
+			});
+		}
+	}
 
-            buttonListApplet.setOnClickListener(new OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    performCommand(APDU_COMMAND.APDU_DISPLAYAPPLETS_ONCARD,
-                            mReaderSpinner.getSelectedItemPosition(), null, (byte) 0, null);
-                }
-            });
-
-            mButtonGetData.setOnClickListener(new OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    Intent intent = new Intent(MainActivity.this, GetDataActivity.class);
-                    startActivityForResult(intent, ACTIVITYRESULT_GET_DATA);
-                }
-            });
-        }
-    }
-
-
-    public void serviceConnected(SEService _session) {
+	public void serviceConnected(SEService _session) {
 		Reader[] readers = new Reader[0];
 
 		if (mTerminal instanceof OpenMobileAPITerminal) {
@@ -830,13 +906,13 @@ public class MainActivity extends Activity implements SEService.CallBack,
 	 * necessary for new installations, else they may be set to null
 	 * 
 	 * @param _cmd
-	 *            APDU-enum command
+	 *                    APDU-enum command
 	 * @param _seekReader
-	 *            actual selected reader
+	 *                    actual selected reader
 	 * @param params
-	 *            necessary for installations, else null
+	 *                    necessary for installations, else null
 	 * @param privileges
-	 *            necessary for installations, else (byte) 0
+	 *                    necessary for installations, else (byte) 0
 	 */
 	private void performCommand(APDU_COMMAND _cmd, int _seekReader,
 			byte[] _params, byte _privileges, Object _cmdParam) {

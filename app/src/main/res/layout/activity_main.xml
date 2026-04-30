@@ -183,6 +183,57 @@
 
     </LinearLayout>
 
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="5dp" >
+
+        <EditText
+            android:id="@+id/edit_license"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:hint="6-digit license"
+            android:inputType="text"
+            android:singleLine="true" />
+
+        <CheckBox
+            android:id="@+id/check_numeric"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Numeric"
+            android:checked="true" />
+
+        <Button
+            android:id="@+id/btn_activate_card"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Activate" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal" >
+
+        <Button
+            android:id="@+id/btn_copy_log"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Copy Log" />
+
+        <Button
+            android:id="@+id/btn_clear_log"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Clear Log" />
+
+    </LinearLayout>
+
     <TextView
         android:id="@+id/log"
         android:layout_width="match_parent"
