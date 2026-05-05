@@ -130,4 +130,9 @@ public class KeysetDataSource {
 				DatabaseConnection.COLUMN_ID + "='" + uid + "'", null);
 	}
 
+	public int removeByName(String name) {
+		return mDatabase.delete(DatabaseConnection.TABLE_KEYSETS,
+				DatabaseConnection.COLUMN6_NAME + "='" + name + "'", null);
+	}
+
 }

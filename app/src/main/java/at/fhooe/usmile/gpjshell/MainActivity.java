@@ -43,6 +43,8 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.PendingIntent;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -69,6 +71,7 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.Spinner;
 import android.widget.TextView;
+import android.widget.Toast;
 import at.fhooe.usmile.gpjshell.db.ChannelSetDataSource;
 import at.fhooe.usmile.gpjshell.db.KeysetDataSource;
 import at.fhooe.usmile.gpjshell.objects.GPAppletData;
@@ -635,9 +638,9 @@ public class MainActivity extends Activity implements SEService.CallBack,
 					List<String> keysetNames = Arrays.asList(mKeysetMap.keySet().toArray(new String[0]));
 					addKeysetItemsOnSpinner(keysetNames);
 
-					// Auto-select the NXP-J3R452 keyset in the UI
+					// Auto-select the NXP-J3R200 keyset in the UI
 					for (int i = 0; i < keysetNames.size(); i++) {
-						if (keysetNames.get(i).startsWith("NXP-J3R452")) {
+						if (keysetNames.get(i).startsWith("NXP-J3R200")) {
 							mKeysetSpinner.setSelection(i);
 							break;
 						}
@@ -838,6 +841,23 @@ public class MainActivity extends Activity implements SEService.CallBack,
 					startActivityForResult(intent, ACTIVITYRESULT_GET_DATA);
 				}
 			});
+
+			mButtonClearLog.setOnClickListener(new OnClickListener() {
+				@Override
+				public void onClick(View v) {
+					mLog.setText("");
+				}
+			});
+
+			mButtonCopyLog.setOnClickListener(new OnClickListener() {
+				@Override
+				public void onClick(View v) {
+					ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+					ClipData clip = ClipData.newPlainText("GPJShell Log", mLog.getText());
+					clipboard.setPrimaryClip(clip);
+					Toast.makeText(MainActivity.this, "Log copied to clipboard", Toast.LENGTH_SHORT).show();
+				}
+			});
 		}
 	}
 
@@ -850,31 +870,10 @@ public class MainActivity extends Activity implements SEService.CallBack,
 		}
 		addReaderItemsOnSpinner(readers);
 
-		// --------- ADD DEFAULT KEYS TO DB -------------
-
+		// --------- CLEANUP/REMOVE "Default" KEYS -------------
 		KeysetDataSource keysetSource = new KeysetDataSource(this);
 		keysetSource.open();
-		for (int i = 1; i <= readers.length; i++) {
-			Reader reader = readers[i - 1];
-			// set unique id to -1. it will be set by DB later, because -1 will
-			// not be found
-			GPKeyset defaultKeyset = new GPKeyset(-1, "Default", 0, 0,
-					GPUtils.byteArrayToString(GPConstants.DEFAULT_KEYS),
-					GPUtils.byteArrayToString(GPConstants.DEFAULT_KEYS),
-					GPUtils.byteArrayToString(GPConstants.DEFAULT_KEYS),
-					reader.getName());
-
-			keysetSource.insertKeyset(defaultKeyset);
-		}
-
-		if (readers.length == 0) {
-			GPKeyset defaultKeyset = new GPKeyset(-1, "Default", 0, 0,
-					GPUtils.byteArrayToString(GPConstants.DEFAULT_KEYS),
-					GPUtils.byteArrayToString(GPConstants.DEFAULT_KEYS),
-					GPUtils.byteArrayToString(GPConstants.DEFAULT_KEYS),
-					"NFC Interface");
-			keysetSource.insertKeyset(defaultKeyset);
-		}
+		keysetSource.removeByName("Default");
 
 		// initialize keysetmap
 		mKeysetMap = keysetSource.getKeysets((String) mReaderSpinner
