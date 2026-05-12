@@ -90,7 +90,7 @@ public class AppletInstallTest extends Activity {
 
 		AID capAid = null;
 		try {
-			capAid = CAPFile.readAID(mAppletUri);
+			capAid = CAPFile.readAID(getApplicationContext(), mAppletUri);
 		} catch (MalformedURLException e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();

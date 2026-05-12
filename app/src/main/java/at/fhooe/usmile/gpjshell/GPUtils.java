@@ -10,8 +10,26 @@
  *     Thomas Sigmund - data base, key set, channel set selection and GET DATA integration
  ******************************************************************************/
 package at.fhooe.usmile.gpjshell;
+import android.content.Context;
+import android.net.Uri;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
 
 public class GPUtils {
+	public static InputStream openUriStream(Context context, String uriString) throws IOException {
+		if (uriString.startsWith("content://") || uriString.startsWith("file://")) {
+			return context.getContentResolver().openInputStream(Uri.parse(uriString));
+		} else {
+			try {
+				return new URL(uriString).openStream();
+			} catch (MalformedURLException e) {
+				return new java.io.File(uriString).toURI().toURL().openStream();
+			}
+		}
+	}
+
 	public static byte[] convertHexStringToByteArray(String string, String separator){
 		String[] stringBytes = string.split(separator);
 		byte[] bytes = new byte[stringBytes.length];

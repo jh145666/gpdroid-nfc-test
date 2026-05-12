@@ -165,15 +165,7 @@ public class GPConnection {
 			GPInstallForLoadException, GPLoadException, CardException {
 		InputStream is = null;
 		try {
-			if (_appletUrl.startsWith("content://") || _appletUrl.startsWith("file://")) {
-				is = mContext.getContentResolver().openInputStream(android.net.Uri.parse(_appletUrl));
-			} else {
-				try {
-					is = new URL(_appletUrl).openStream();
-				} catch (MalformedURLException e) {
-					is = new java.io.File(_appletUrl).toURI().toURL().openStream();
-				}
-			}
+			is = GPUtils.openUriStream(mContext, _appletUrl);
 		} catch (SecurityException se) {
 			throw new IOException("SecurityException: Permission denied to read file", se);
 		}
@@ -282,7 +274,7 @@ public class GPConnection {
 		if (_url == null) {
 			return "no Applet selected";
 		}
-		if (!(_url).endsWith(".cap")) {
+		if (!(_url).endsWith(".cap") && !(_url).startsWith("content://")) {
 			throw new IOException("Not a valid path or not a cap file");
 		}
 
@@ -379,7 +371,7 @@ public class GPConnection {
 
 			case APDU_DELETE_SENT_APPLET:
 				AID aid;
-				aid = CAPFile.readAID((String)_cmd.getCommandParameter());
+				aid = CAPFile.readAID(mContext, (String)_cmd.getCommandParameter());
 				ret = "TCPConn" + GPUtils.byteArrayToString(aid.getBytes());
 				deleteApplet(aid);
 				break;
