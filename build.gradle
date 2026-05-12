@@ -6,6 +6,6 @@ buildscript {
     dependencies {
         // This is the line that was likely missing or wrong
         // Use 4.2.2 for older projects, or 7.x/8.x for modern ones
-        classpath 'com.android.tools.build:gradle:7.4.2' 
+        classpath 'com.android.tools.build:gradle:8.13.2'
     }
 }
