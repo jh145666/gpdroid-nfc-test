@@ -20,8 +20,8 @@ import net.sourceforge.gpj.cardservices.CapFile;
 
 public class CAPFile {
 
-	public static AID readAID(android.content.Context context, String _url) throws IOException {
-		CapFile cpFile = new CapFile(GPUtils.openUriStream(context, _url), null);
+	public static AID readAID(String _url) throws MalformedURLException, IOException{
+		CapFile cpFile = new CapFile(new URL(_url).openStream(), null);
 		return cpFile.getPackageAID();
 	}
 }

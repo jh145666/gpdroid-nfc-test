@@ -32,12 +32,10 @@ public class CapInstallScript {
 	}
 
 	public static CapInstallScript getFromCapFile(String capUrl) {
-		if (!capUrl.endsWith(".cap") && !capUrl.startsWith("content://"))
+		if (capUrl == null || !capUrl.toLowerCase().contains(".cap"))
 			return null;
-		int lastDotCap = capUrl.lastIndexOf(".cap");
-		if (lastDotCap == -1)
-			return null;
-		String scriptUrl = capUrl.substring(0, lastDotCap) + ".inst";
+		int lastIndex = capUrl.toLowerCase().lastIndexOf(".cap");
+		String scriptUrl = capUrl.substring(0, lastIndex) + ".inst";
 		if (scriptUrl.contains("file://")) {
 			scriptUrl = scriptUrl.substring(scriptUrl.lastIndexOf("file://")+"file://".length());
 		}

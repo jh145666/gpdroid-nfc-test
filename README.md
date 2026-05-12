@@ -1,4 +1,4 @@
-﻿# GPDroid-NFC -- Global Platform Card Management Tool using the Android NFC API
+# GPDroid-NFC -- Global Platform Card Management Tool using the Android NFC API
 
 This Android application is designed to manage applets on GlobalPlatform-compliant
 contactless smartcards. You can install and delete applets to and from a contactless
