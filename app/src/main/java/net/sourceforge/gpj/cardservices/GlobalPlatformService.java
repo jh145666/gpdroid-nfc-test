@@ -128,7 +128,7 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
     public static Map<String, byte[]> SPECIAL_MOTHER_KEYS = new TreeMap<String, byte[]>();
 
     static {
-    	SPECIAL_MOTHER_KEYS.put(AID.GEMALTO, new byte[] {0x47, 0x45, 0x4D, 0x58, 0x50, 0x52, 0x45, 0x53, 0x53, 0x4F, 0x53, 0x41, 0x4D, 0x50, 0x4C, 0x45});
+        SPECIAL_MOTHER_KEYS.put(AID.GEMALTO, new byte[] {0x47, 0x45, 0x4D, 0x58, 0x50, 0x52, 0x45, 0x53, 0x53, 0x4F, 0x53, 0x41, 0x4D, 0x50, 0x4C, 0x45});
     }
 
     public static final int defaultLoadSize = 255;
@@ -250,32 +250,57 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
      *             on data transmission errors
      */
     public void open() throws GPSecurityDomainSelectionException, CardException {
-    	
-    	if (sdAID == null) {
-    		// Try known SD AIDs
-    		short sw = 0;
-    		for(Map.Entry<String,AID> entry : AID.SD_AIDS.entrySet()) {
-        		CommandAPDU command = new CommandAPDU(CLA_ISO7816, INS_SELECT, 0x04,
+        open(null);
+    }
+
+    /**
+     * Establish a connection to the security domain. If preferredSdAID is
+     * non-null, it will be used as the security domain AID (overriding any
+     * sdAID set in the constructor). If preferredSdAID is null, the behavior
+     * depends on whether sdAID was set in the constructor: if set, that AID
+     * is used; if not, auto-detection tries all known SD AIDs.
+     * This method is required before doing
+     * {@link #openSecureChannel openSecureChannel}.
+     *
+     * @param preferredSdAID
+     *            the preferred security domain AID to select, or null to use
+     *            the sdAID from constructor or auto-detect
+     * @throws GPSecurityDomainSelectionException
+     *             if security domain selection fails for some reason
+     * @throws CardException
+     *             on data transmission errors
+     */
+    public void open(AID preferredSdAID) throws GPSecurityDomainSelectionException, CardException {
+        // If a preferred SD AID is specified, override the instance sdAID
+        if (preferredSdAID != null) {
+            sdAID = preferredSdAID;
+        }
+
+        if (sdAID == null) {
+                // Try known SD AIDs
+                short sw = 0;
+                for(Map.Entry<String,AID> entry : AID.SD_AIDS.entrySet()) {
+                        CommandAPDU command = new CommandAPDU(CLA_ISO7816, INS_SELECT, 0x04,
                         0x00, entry.getValue().getBytes());
                 ResponseAPDU resp = channel.transmit(command);
                 notifyExchangedAPDU(command, resp);
                 sw = (short) resp.getSW();
                 if (sw == SW_NO_ERROR) {
-                	sdAID = entry.getValue();
+                        sdAID = entry.getValue();
                     System.out.println("Successfully selected Security Domain "+entry.getKey()+" "+
                             entry.getValue().toString());
-                	break;
+                        break;
                 }
                 System.out.println("Failed to select Security Domain "+entry.getKey()+" "+
                   entry.getValue().toString()+", SW: "+GPUtil.swToString(sw));
-    		}
-    		if(sdAID == null) {
-        		throw new GPSecurityDomainSelectionException(sw,
+                }
+                if(sdAID == null) {
+                        throw new GPSecurityDomainSelectionException(sw,
                         "Could not select any of the known Security Domains!");
-    			
-    		}
-    	} else {
-    		CommandAPDU command = new CommandAPDU(CLA_ISO7816, INS_SELECT, 0x04,
+                        
+                }
+        } else {
+                CommandAPDU command = new CommandAPDU(CLA_ISO7816, INS_SELECT, 0x04,
                     0x00, sdAID.getBytes());
             ResponseAPDU resp = channel.transmit(command);
             notifyExchangedAPDU(command, resp);
@@ -284,8 +309,8 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
                 throw new GPSecurityDomainSelectionException(sw,
                         "Could not select custom sdAID " + sdAID + ", SW: "
                                 + GPUtil.swToString(sw));
-            }	
-    	}	
+            }   
+        }       
     }
 
     /**
@@ -332,7 +357,7 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
         }
 
         if(gemalto && AID.SD_AIDS.get(AID.GEMALTO).equals(sdAID)) {            
-        	// get data, prepare diver buffer
+                // get data, prepare diver buffer
             CommandAPDU c = new CommandAPDU(CLA_GP, INS_GET_DATA, 0x9F ,0x7F, 256);
             //byte[] cData=new byte[]{(byte)CLA_GP,(byte)INS_GET_DATA,(byte)0x9F,(byte)0x7F,0x00};
             //CommandAPDU c = new CommandAPDU(cData);
@@ -343,13 +368,13 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
             if (sw != SW_NO_ERROR) {
                 throw new CardException("Wrong "+AID.GEMALTO+" get CPLC data, SW: " + GPUtil.swToString(sw));
             }
-        	byte[] diverData = new byte[16];
+                byte[] diverData = new byte[16];
             byte[] t = sdAID.getBytes();
             diverData[0] = t[t.length - 2];
             diverData[1] = t[t.length - 1];
             System.arraycopy(r.getData(), 15, diverData, 4, 4);
             
-        	staticKeys.diversify(diverData);
+                staticKeys.diversify(diverData);
         }
         
         byte[] rand = new byte[8];
@@ -968,40 +993,40 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
         return registry;
     }
     
-	private List<AID> getInstalledApplets() {
-		List<AID> aids = new ArrayList<AID>();
-	
-		CommandAPDU getStatus = new CommandAPDU(CLA_GP, GET_STATUS, 0x40, 0x00, new byte[] {0x4F, 0x00});
-		ResponseAPDU response = null;
-		
-		try {
-			response = transmit(getStatus);
-			notifyExchangedAPDU(getStatus, response);
-			short sw = (short) response.getSW();
-			if (sw != SW_NO_ERROR && sw != (short) 0x6310) {
-				Log.d("gps", "error retrieving installed applets");
-			}
-		} catch (IllegalStateException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (CardException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+        private List<AID> getInstalledApplets() {
+                List<AID> aids = new ArrayList<AID>();
+        
+                CommandAPDU getStatus = new CommandAPDU(CLA_GP, GET_STATUS, 0x40, 0x00, new byte[] {0x4F, 0x00});
+                ResponseAPDU response = null;
+                
+                try {
+                        response = transmit(getStatus);
+                        notifyExchangedAPDU(getStatus, response);
+                        short sw = (short) response.getSW();
+                        if (sw != SW_NO_ERROR && sw != (short) 0x6310) {
+                                Log.d("gps", "error retrieving installed applets");
+                        }
+                } catch (IllegalStateException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                } catch (CardException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                }
 
-		int index = 0;
-		byte[] data = response.getData();
-	
-		while (index < data.length) {
-			int len = data[index++];
-			AID aid = new AID(data, index, len);
-			aids.add(aid);
-			index += len;
-			int life_cycle = data[index++];
-			int privileges = data[index++];
-		}
-		return aids;
-	}
+                int index = 0;
+                byte[] data = response.getData();
+        
+                while (index < data.length) {
+                        int len = data[index++];
+                        AID aid = new AID(data, index, len);
+                        aids.add(aid);
+                        index += len;
+                        int life_cycle = data[index++];
+                        int privileges = data[index++];
+                }
+                return aids;
+        }
 
     private class KeySet {
 
@@ -1073,7 +1098,7 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
                 data[15] = (byte) i;
             } else {
                 // This is EMV
-            	data[0] = res[4];
+                data[0] = res[4];
                 data[1] = res[5];
                 data[2] = res[6];
                 data[3] = res[7];
@@ -1489,7 +1514,7 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
                     byte[] gemMotherKey = SPECIAL_MOTHER_KEYS.get(AID.GEMALTO);
                     keys = new byte[][] {gemMotherKey, gemMotherKey, gemMotherKey};
                     gemalto = true;
-                	diver = DIVER_VISA2;
+                        diver = DIVER_VISA2;
                 } else if (args[i].equals("-visa2")) {
                     diver = DIVER_VISA2;
                 } else if (args[i].equals("-emv")) {
@@ -1651,16 +1676,16 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
         try {
 
             try {
-            	Card c = null;
-            	try {
-            		c = terminal.connect("*");
-            	} catch (CardException e) {
-            		if (e.getCause().getMessage().equalsIgnoreCase("SCARD_E_NO_SMARTCARD")) {
-            			System.err.println("No card in reader " + terminal.getName());
-//                			continue;
-            		} else
-            			e.printStackTrace();
-            	}
+                Card c = null;
+                try {
+                        c = terminal.connect("*");
+                } catch (CardException e) {
+                        if (e.getCause().getMessage().equalsIgnoreCase("SCARD_E_NO_SMARTCARD")) {
+                                System.err.println("No card in reader " + terminal.getName());
+//                                      continue;
+                        } else
+                                e.printStackTrace();
+                }
                 
                 System.out.println("Found card in terminal: "
                         + terminal.getName());
@@ -1766,9 +1791,9 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
             }
         }
         catch (Exception e) {
-        	System.out.format("Terminated by escaping exception %s\n", e
-        			.getClass().getName());
-        	e.printStackTrace();
+                System.out.format("Terminated by escaping exception %s\n", e
+                                .getClass().getName());
+                e.printStackTrace();
         }
         return service;
     }
