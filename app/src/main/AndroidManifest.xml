@@ -76,6 +76,12 @@
             android:screenOrientation="portrait"
             android:theme="@android:style/Theme.Dialog" >
         </activity>
+        <activity
+            android:name="at.fhooe.usmile.gpjshell.DeleteAppletActivity"
+            android:label="@string/title_activity_delete_applet"
+            android:screenOrientation="portrait"
+            android:theme="@android:style/Theme.Dialog" >
+        </activity>
     </application>
 
 </manifest>
