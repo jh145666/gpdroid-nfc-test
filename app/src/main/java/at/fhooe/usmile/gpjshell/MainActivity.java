@@ -98,6 +98,7 @@ public class MainActivity extends Activity implements SEService.CallBack,
         private Spinner mChannelSpinner = null;
         private Spinner mSdSpinner = null;
         private Button buttonConnect = null;
+        private Button mButtonDeleteApplet = null;
         private Button mButtonAddKeyset = null;
         private Button mButtonAddChannelSet = null;
         private Button mButtonRemoveKeyset = null;
@@ -123,7 +124,7 @@ public class MainActivity extends Activity implements SEService.CallBack,
 
         public enum APDU_COMMAND {
                 APDU_INSTALL, APDU_DELETE_SENT_APPLET, APDU_DISPLAYAPPLETS_ONCARD, APDU_SELECT, APDU_SEND, APDU_GET_DATA,
-                APDU_DELETE_SELECTED_APPLET, APDU_CMD_OPEN
+                APDU_DELETE_SELECTED_APPLET, APDU_DELETE_BY_AID, APDU_CMD_OPEN
         }
 
         private String mAppletUrl = null;
@@ -631,6 +632,7 @@ public class MainActivity extends Activity implements SEService.CallBack,
 
                 mReaderSpinner = (Spinner) findViewById(R.id.reader_spinner);
                 buttonConnect = (Button) findViewById(R.id.btn_install_applet);
+                mButtonDeleteApplet = (Button) findViewById(R.id.btn_delete_applet);
                 buttonListApplet = (Button) findViewById(R.id.btn_list_applets);
                 buttonSelectApplet = (Button) findViewById(R.id.button3);
                 mButtonAppletInstallTest = (Button) findViewById(R.id.btn_applet_test);
@@ -709,13 +711,25 @@ public class MainActivity extends Activity implements SEService.CallBack,
                         buttonConnect.setOnClickListener(new OnClickListener() {
                                 @Override
                                 public void onClick(View v) {
-                                        try {
-                                                performCommand(APDU_COMMAND.APDU_INSTALL,
-                                                                mReaderSpinner.getSelectedItemPosition(), null,
-                                                                (byte) 0, mAppletUrl);
-                                        } catch (Exception e) {
-                                                MAIN_Log.e(LOG_TAG, "Error while installing: ", e);
-                                        }
+                                        // Launch install options activity first
+                                        Intent intent = new Intent(MainActivity.this,
+                                                        SetInstallParamActivity.class);
+                                        startActivityForResult(intent, ACTIVITYRESULT_INSTALL_PARAM_SET);
+                                }
+                        });
+
+                        mButtonDeleteApplet.setOnClickListener(new OnClickListener() {
+                                @Override
+                                public void onClick(View v) {
+                                        // Launch delete applet activity
+                                        Intent intent = new Intent(MainActivity.this,
+                                                        DeleteAppletActivity.class);
+                                        GPKeyset keyset = mKeysetMap.get((String) mKeysetSpinner.getSelectedItem());
+                                        GPChannelSet channelSet = mChannelSetMap.get((String) mChannelSpinner.getSelectedItem());
+                                        intent.putExtra("keyset", keyset);
+                                        intent.putExtra("channelSet", channelSet);
+                                        intent.putExtra("seekReader", mReaderSpinner.getSelectedItemPosition());
+                                        startActivity(intent);
                                 }
                         });
 

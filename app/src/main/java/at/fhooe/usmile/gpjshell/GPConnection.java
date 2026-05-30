@@ -412,6 +412,13 @@ public class GPConnection {
                                 ret = "Applet deleted";
                                 break;
 
+                        case APDU_DELETE_BY_AID:
+                                AID deleteAid = (AID)_cmd.getCommandParameter();
+                                deleteAID(deleteAid);
+                                logTimestamp(LogEvent.APPLET_DELETE_FINISHED);
+                                ret = "Applet deleted: " + deleteAid.toString();
+                                break;
+
                         case APDU_DISPLAYAPPLETS_ONCARD:
                                 ret = listApplets(_cmd.getSeekReaderName());
                                 channel.close();
