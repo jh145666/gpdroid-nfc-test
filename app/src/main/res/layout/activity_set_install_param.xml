@@ -11,34 +11,76 @@
     tools:context=".SetInstallParamActivity" >
 
     <TextView
-        android:id="@+id/textView4"
+        android:id="@+id/textView_title"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/keyset_descr" />
-
-    <TextView
-        android:id="@+id/textView1"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/parameter_text"
+        android:text="@string/install_options_title"
         android:textAppearance="?android:attr/textAppearanceLarge" />
 
-    <EditText
-        android:id="@+id/edit_parameter_parameters"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:ems="10" >
-
-        <requestFocus />
-    </EditText>
-
     <TextView
-        android:id="@+id/textView3"
+        android:id="@+id/textView_privileges_label"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
-        android:text="@string/parameter_privileges"
-        android:textAppearance="?android:attr/textAppearanceLarge" />
+        android:layout_marginTop="15dp"
+        android:text="@string/privileges_label"
+        android:textAppearance="?android:attr/textAppearanceMedium" />
+
+    <CheckBox
+        android:id="@+id/check_default_selected"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="5dp"
+        android:text="@string/privilege_default_selected" />
+
+    <CheckBox
+        android:id="@+id/check_security_domain"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/privilege_security_domain" />
+
+    <CheckBox
+        android:id="@+id/check_dap_verification"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/privilege_dap_verification" />
+
+    <CheckBox
+        android:id="@+id/check_global_registry"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/privilege_global_registry" />
+
+    <CheckBox
+        android:id="@+id/check_token_verification"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/privilege_token_verification" />
+
+    <CheckBox
+        android:id="@+id/check_receipt_generation"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/privilege_receipt_generation" />
+
+    <CheckBox
+        android:id="@+id/check_ciphered_dap"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/privilege_ciphered_dap" />
+
+    <CheckBox
+        android:id="@+id/check_authorized_management"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/privilege_authorized_management" />
+
+    <TextView
+        android:id="@+id/textView_custom_priv"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:text="@string/privilege_custom_hint"
+        android:textAppearance="?android:attr/textAppearanceSmall" />
 
     <EditText
         android:id="@+id/edit_parameter_privileges"
@@ -47,20 +89,50 @@
         android:ems="10"
         android:inputType="number" />
 
-    <Button
-        android:id="@+id/btn_parameter_set"
+    <TextView
+        android:id="@+id/textView_params_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="15dp"
+        android:text="@string/parameter_text"
+        android:textAppearance="?android:attr/textAppearanceMedium" />
+
+    <EditText
+        android:id="@+id/edit_parameter_parameters"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
-        android:text="@string/parameter_OK_button" />
+        android:ems="10"
+        android:hint="@string/parameter_hint" />
 
     <TextView
         android:id="@+id/textView2"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="25dp"
+        android:layout_marginTop="5dp"
         android:gravity="center"
         android:text="@string/parameter_title"
         android:textAppearance="?android:attr/textAppearanceSmall" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:orientation="horizontal" >
+
+        <Button
+            android:id="@+id/btn_parameter_set"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/parameter_OK_button" />
+
+        <Button
+            android:id="@+id/btn_parameter_cancel"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/parameter_cancel_button" />
+
+    </LinearLayout>
 
 </LinearLayout>
