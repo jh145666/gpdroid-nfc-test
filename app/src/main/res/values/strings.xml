@@ -16,6 +16,7 @@
     <string name="btn_list_applets">List Applets</string>
     <string name="btn_choose_applet">Choose Applet</string>
     <string name="btn_install_applet">Install Applet</string>
+    <string name="btn_delete_applet">Delete Applet</string>
 
     <!-- addKeyset Activity -->
     <string name="title_activity_add_keyset">Please enter a new Keyset</string>
@@ -29,32 +30,57 @@
     <string name="keyset_negative">Cancel</string>
     <string name="keyset_descr">Hint: type in hex-values (e.g. &quot;FACD008020&quot;)</string>
     <string name="keyset_dialog_title">Keyset ID already exists!</string>
-    <string name="keyset_dialog_ask_overwrite">Do you want to overwrite this keyset?</string>
+    <string name="keyset_dialog_text">Do you want to overwrite the existing keyset?</string>
+    <string name="keyset_dialog_ask_overwrite">Do you want to overwrite the existing keyset?</string>
 
-    <!-- add Channel Activity -->
-    <string name="title_activity_add_channel_set">AddChannelSetActivity</string>
-    <string name="channel_name">Channel name</string>
-    <string name="channel_scpversion">SCP-Version</string>
-    <string name="channel_id">ID</string>
-    <string name="channel_set">Set</string>
+    <!-- addChannelSet Activity -->
+    <string name="title_activity_add_channel_set">Please enter a new ChannelSet</string>
+    <string name="channel_name">Name</string>
+    <string name="channel_scp">SCP Version</string>
+    <string name="channel_scpversion">SCP Version</string>
     <string name="channel_security">Security Level</string>
     <string name="channel_gemalto">is it gemalto?</string>
 
     <!-- Install Parameters Activity -->
     <string name="title_activity_set_install_param">SetInstallParamActivity</string>
+    <string name="install_options_title">Install Options</string>
+    <string name="privileges_label">Privileges</string>
+    <string name="privilege_default_selected">Default Selected (0x04)</string>
+    <string name="privilege_security_domain">Security Domain (0x01)</string>
+    <string name="privilege_dap_verification">DAP Verification (0x02)</string>
+    <string name="privilege_global_registry">Global Registry (0x08)</string>
+    <string name="privilege_token_verification">Token Verification (0x10)</string>
+    <string name="privilege_receipt_generation">Receipt Generation (0x20)</string>
+    <string name="privilege_ciphered_dap">Ciphered DAP (0x40)</string>
+    <string name="privilege_authorized_management">Authorized Management (0x80)</string>
+    <string name="privilege_custom_hint">Override checkboxes (0-255)</string>
     <string name="parameter_title">keep empty, if no parameters are needed</string>
-    <string name="parameter_text">enter parameters</string>
-    <string name="parameter_privileges">privileges (0-255)</string>
-    <string name="parameter_OK_button">Set</string>
-    
+    <string name="parameter_text">Install Parameters (hex)</string>
+    <string name="parameter_hint">e.g. C900</string>
+    <string name="parameter_privileges">Custom Privileges Value</string>
+    <string name="parameter_OK_button">Install</string>
+    <string name="parameter_cancel_button">Cancel</string>
+
+    <!-- Delete Applet Activity -->
+    <string name="title_activity_delete_applet">DeleteAppletActivity</string>
+    <string name="delete_applet_title">Delete Applet</string>
+    <string name="delete_aid_label">Applet AID (hex)</string>
+    <string name="delete_aid_hint">e.g. A0000001510000</string>
+    <string name="delete_deps">Delete dependencies</string>
+    <string name="delete_or_list">Or select from card:</string>
+    <string name="delete_list_applets">List Applets on Card</string>
+    <string name="delete_confirm_button">Delete</string>
+    <string name="delete_cancel_button">Cancel</string>
+
     <!-- Get Data Activity -->
     <string name="title_activity_get_data">GetDataActivity</string>
     <string name="getdata_descr">Please set your parameters as hex:</string>
     <string name="getdata_p1">P1</string>
     <string name="getdata_p2">P2</string>
     <string name="getdata_btn_ok">OK</string>
-        <string name="getdata_btn_cancel">Cancel</string>
-        <string name="applet_aids">Applet AIDs</string>
-        <string name="title_applet_install_test">Applet Install Test</string>
-        <string name="title_echo_test">APDU Echo Test</string>
+    <string name="getdata_btn_cancel">Cancel</string>
+    <string name="applet_aids">Applet AIDs</string>
+    <string name="title_applet_install_test">Applet Install Test</string>
+    <string name="title_echo_test">APDU Echo Test</string>
+
 </resources>
